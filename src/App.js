@@ -54,12 +54,12 @@ function findInObject(obj, key) {
 
 function App() {
   const [uri, setUri] = useState(
-    'https://tabs.ultimate-guitar.com/tab/hillsong-united/heart-of-worship-chords-1012850'
+    'https://tabs.ultimate-guitar.com/tab/the-cranberries/dreams-chords-1485486'
   );
 
-  const [chords, setChords] = useState('paste a ultimate-guitar.com link and press `Load Song`..');
-  const [artist, setArtist] = useState('');
-  const [song, setSong] = useState('');
+  const [chords, setChords] = useState("paste a ultimate-guitar.com link and press `Load Song`..\r\nExample song:\r\nCapo 3\r\n\r\n[Intro]\r\n| [ch]Bb[/ch]   | [ch]C/D[/ch]\r\n\r\n[Verse 1]\r\n[tab][ch]A[/ch]        [ch]C[/ch]\r\n  Example song lyrics line[/tab]\r\n");
+  const [artist, setArtist] = useState('Example Artist');
+  const [song, setSong] = useState('Example Song');
 
   const [parsingStyle, setParsingStyle] = useState(undefined);
   const [halftoneStyle, setHalftoneStyle] = useState('FLATS');
@@ -69,10 +69,12 @@ function App() {
   const [transposedChords, setTransposedChords] = useState(chords);
 
   const renderChords = useCallback(() => formatChords(transposedChords), [transposedChords]);
-  const downloadPdf = useCallback(() => generatePDF(artist, song, transposedChords), [
+  const downloadPdf = useCallback(() => {
+    generatePDF(artist, song, transposedChords, uri)}, [
     artist,
     song,
-    transposedChords
+    transposedChords,
+    uri
   ]);
 
   const loadSong = useCallback(() => {
@@ -222,6 +224,16 @@ function App() {
         <div className="artist">{artist}</div>
         <div className="song">{song}</div>
         <div className="chords" dangerouslySetInnerHTML={renderChords(transposedChords)}></div>
+        <div className="artist">Editor</div>
+        <textarea 
+          id = 'editarea'
+          name='editarea'
+          style={{ whiteSpace: 'pre' }}
+          rows={20}
+          cols={100}
+          value={transposedChords}
+          onChange={e => setTransposedChords(e.target.value.replaceAll("\n", "\r\n") /* took me like 3 friggin hours to debug this */ ) }
+        />
       </div>
     </>
   );
