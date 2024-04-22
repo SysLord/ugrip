@@ -43,16 +43,42 @@ function processChords(chords) {
   return processedChords;
 }
 
-export default (artist, song, chords) => {  
+export default (artist, song, chords, url) => {  
   const fileName = `chords_${artist}_${song}`;
   const fileNameFormatted = fileName.replace(/\W/g, '-').toLocaleLowerCase();
+
+//  const artistSongClassic = [
+//    { text: artist, style: 'artist' },
+//    { text: song, style: 'song' }
+//  ];
+  const songFirst = [
+    { text: song, style: 'artist' },
+    { text: artist, style: 'song' },
+  ];
+//  const artistSongUrlLessSpace = [
+//    { text: song + ' (' + artist +')', style: 'song' },
+//  ];
 
   const docDefinition = {
     pageSize: 'A4',
 
     content: [
-      { text: artist, style: 'artist' },
-      { text: song, style: 'song' },
+      {
+        columns: [
+          {
+            width: 'auto',
+            stack: [
+              {
+                qr: url, fit: '35', margin: [ 0, 0, 10, 0 ]
+              }
+            ]
+          },
+          {
+            width: '*',
+            stack: songFirst
+          }
+        ]
+      },
       ' ',
       ...processChords(chords)
     ],

@@ -7,6 +7,7 @@ features:
 - transpose chords
 - simplify chords
 - select parsing style (normal / northern european / southern european)
+- edit source file
 - generate pdf
 
 ---
