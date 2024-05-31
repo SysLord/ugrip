@@ -62,20 +62,50 @@ function App() {
   const [song, setSong] = useState('Example Song');
 
   const [parsingStyle, setParsingStyle] = useState(undefined);
-  const [halftoneStyle, setHalftoneStyle] = useState('FLATS');
+  const [halftoneStyle, setHalftoneStyle] = useState('SHARPS');
   const [simplify, setSimplify] = useState(false);
 
   const [transposeStep, setTransposeStep] = useState(0);
   const [transposedChords, setTransposedChords] = useState(chords);
 
   const renderChords = useCallback(() => formatChords(transposedChords), [transposedChords]);
-  const downloadPdf = useCallback(() => {
-    generatePDF(artist, song, transposedChords, uri)}, [
-    artist,
-    song,
-    transposedChords,
-    uri
-  ]);
+  const downloadPdf = useCallback(() => { generatePDF(artist, song, transposedChords, uri, fileName(artist, song)) }, [artist, song, transposedChords, uri]);
+  const downloadTxt = useCallback(() => { generateTxtFile(artist, song, transposedChords, uri, fileName(artist, song)) }, [artist, song, transposedChords, uri]);
+
+  function fileName(artist, song) {
+    const fileName = `${artist}_${song}`;
+    // artist /artist_song  song  -->  artist-artist_song-song
+    const fileNameForStorage = fileName
+        .replace(/\s/g, '-')
+        .replace(/[^-\w]/g, '')
+        .replace(/-+/g, '-')
+        .toLocaleLowerCase();
+
+    return fileNameForStorage;
+  }
+
+  // Story raw source as simple as possible, so that a human can copy-paste chords easily (not true for JSON with \\n)
+  function generateTxtFile(artist, song, transposedChords, uri, fileName) {
+    const text = [
+      'ug_Format:RawV1',
+      `ug_url:${uri}`,
+      `ug_artist:${artist}`,
+      `ug_song:${song}`,
+      `ug_chords:${transposedChords}`
+    ].join('\n');
+
+    const a = document.createElement('a');
+    const hrefUrl = new Blob([text], { type: 'text/plain' });
+    a.href = URL.createObjectURL(hrefUrl);
+    a.download = fileName  + ".txt";
+    document.body.appendChild(a);
+    try {
+      a.click();
+    } finally {
+      try { document.body.removeChild(a); } catch(e) { console.log(e); }
+      try { URL.revokeObjectURL(hrefUrl); } catch(e) { console.log(e); }
+    }
+  }
 
   const loadSong = useCallback(() => {
     fetch(`${corsURI}${uri}`)
@@ -195,6 +225,7 @@ function App() {
         <Box className="box-2" pad="none" style={{ flexDirection: 'row' }}>
           <Button primary onClick={loadSong} label="LOAD SONG" />
           <Button primary onClick={downloadPdf} label="DOWNLOAD PDF" />
+          <Button secondary onClick={downloadTxt} label="DOWNLOAD RAW" />
         </Box>
 
         <Select
@@ -225,7 +256,13 @@ function App() {
         <div className="song">{song}</div>
         <div className="chords" dangerouslySetInnerHTML={renderChords(transposedChords)}></div>
         <div className="artist">Editor</div>
-        <textarea 
+        <div>
+            <input value={artist} onChange={e => setArtist(e.target.value) } />
+        </div>
+        <div>
+            <input value={song} onChange={e => setSong(e.target.value) } />
+        </div>
+        <textarea
           id = 'editarea'
           name='editarea'
           style={{ whiteSpace: 'pre' }}
