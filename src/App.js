@@ -56,6 +56,9 @@ function App() {
   const [uri, setUri] = useState(
     'https://tabs.ultimate-guitar.com/tab/the-cranberries/dreams-chords-1485486'
   );
+  const [uriContent, setUriContent] = useState(
+      ''
+  );
 
   const [chords, setChords] = useState("paste a ultimate-guitar.com link and press `Load Song`..\r\nExample song:\r\nCapo 3\r\n\r\n[Intro]\r\n| [ch]Bb[/ch]   | [ch]C/D[/ch]\r\n\r\n[Verse 1]\r\n[tab][ch]A[/ch]        [ch]C[/ch]\r\n  Example song lyrics line[/tab]\r\n");
   const [artist, setArtist] = useState('Example Artist');
@@ -128,6 +131,24 @@ function App() {
         setChords(parsedChords);
       });
   }, [uri]);
+
+  const load = useCallback(() => {
+          const div = document.createElement('div');
+          div.innerHTML = uriContent;
+
+          const [store] = div.getElementsByClassName('js-store');
+          const storeJson = store.getAttribute('data-content');
+
+          const storeData = JSON.parse(storeJson);
+
+          const [parsedSongName] = findInObject(storeData, 'song_name');
+          const [parsedArtistName] = findInObject(storeData, 'artist_name');
+          const [parsedChords] = findInObject(storeData, 'content');
+
+          setArtist(parsedArtistName);
+          setSong(parsedSongName);
+          setChords(parsedChords);
+  }, [uriContent]);
 
   useEffect(() => {
     const parseOptions = {};
@@ -209,6 +230,7 @@ function App() {
     <>
       <div className="controls">
         <TextInput value={uri} onChange={e => setUri(e.target.value)} />
+        <TextInput value={uriContent} onChange={e => setUriContent(e.target.value)} />
 
         <Box className="box-1" pad="none">
           <Text>{`TRANSPOSE: ${transposeStep}`}</Text>
@@ -224,6 +246,7 @@ function App() {
 
         <Box className="box-2" pad="none" style={{ flexDirection: 'row' }}>
           <Button primary onClick={loadSong} label="LOAD SONG" />
+          <Button primary onClick={load} label="LOAD" />
           <Button primary onClick={downloadPdf} label="DOWNLOAD PDF" />
           <Button secondary onClick={downloadTxt} label="DOWNLOAD RAW" />
         </Box>
