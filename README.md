@@ -1,3 +1,26 @@
+# Disclaimer
+
+- The current state of my fixes is an uncleaned mess of attempted quickfix.
+  - The public proxy that was used to remove CORS restrictions by the original author hedwiggggg seems to be permanently overloaded.
+  - I invested a few hours trying to get the included cors proxy locally to work and then tried to add my own local cors proxy, but I was not successful and not very patient.
+- I added a frontend field to manually paste the ultimate guitar page using developer tools in the browser.
+ 
+# TLDR;
+locally: `npm run start`
+
+newer npm versions require quickfix: \
+`NODE_OPTIONS=--openssl-legacy-provider npm run start`
+
+## How to manually paste website code from ultimate guitar
+- Go to ultimate guitar
+- F12 developer console > network
+- refresh
+- use first request html
+- paste into second field and press "load"
+
+# Original Readme
+---
+
 This webapp can pull the chords / lyrics from ultimate-guitar.com and create a pdf from it.
 
 --- 
