@@ -14,6 +14,7 @@ import {
 import { parse, transpose, prettyPrint } from 'chord-magic';
 
 import generatePDF from './lib/generate-pdf';
+import { parseUltimateGuitarHtml } from './lib/ultimate-guitar';
 
 import './App.css';
 
@@ -31,34 +32,15 @@ function formatChords(chords) {
   return { __html: formattedChords };
 }
 
-// taken from YagoLopez
-// https://gist.github.com/YagoLopez
-// https://gist.github.com/YagoLopez/1c2fe87d255fc64d5f1bf6a920b67484
-function findInObject(obj, key) {
-  let objects = [];
-  const keys = Object.keys(obj || {});
-
-  for (let i = 0; i < keys.length; i += 1) {
-    const _key = keys[i];
-    if (Object.prototype.hasOwnProperty.call(obj, _key)) {
-      if (typeof obj[_key] === 'object') {
-        objects = [...objects, ...findInObject(obj[_key], key)];
-      } else if (_key === key) {
-        objects.push(obj[_key]);
-      }
-    }
-  }
-
-  return objects;
-}
-
 function App() {
   const [uri, setUri] = useState(
     'https://tabs.ultimate-guitar.com/tab/the-cranberries/dreams-chords-1485486'
   );
-  const [uriContent, setUriContent] = useState(
-      ''
-  );
+  const [manualSource, setManualSource] = useState('');
+  const [showManualSource, setShowManualSource] = useState(false);
+  const [loadError, setLoadError] = useState('');
+  const [loadMessage, setLoadMessage] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const [chords, setChords] = useState("paste a ultimate-guitar.com link and press `Load Song`..\r\nExample song:\r\nCapo 3\r\n\r\n[Intro]\r\n| [ch]Bb[/ch]   | [ch]C/D[/ch]\r\n\r\n[Verse 1]\r\n[tab][ch]A[/ch]        [ch]C[/ch]\r\n  Example song lyrics line[/tab]\r\n");
   const [artist, setArtist] = useState('Example Artist');
@@ -74,6 +56,14 @@ function App() {
   const renderChords = useCallback(() => formatChords(transposedChords), [transposedChords]);
   const downloadPdf = useCallback(() => { generatePDF(artist, song, transposedChords, uri, fileName(artist, song)) }, [artist, song, transposedChords, uri]);
   const downloadTxt = useCallback(() => { generateTxtFile(artist, song, transposedChords, uri, fileName(artist, song)) }, [artist, song, transposedChords, uri]);
+
+  const applySongData = useCallback(({ artist: nextArtist, song: nextSong, chords: nextChords }) => {
+    setArtist(nextArtist);
+    setSong(nextSong);
+    setChords(nextChords);
+    setLoadError('');
+    setLoadMessage(`Loaded "${nextSong}" by ${nextArtist}.`);
+  }, []);
 
   function fileName(artist, song) {
     const fileName = `${artist}_${song}`;
@@ -110,45 +100,41 @@ function App() {
     }
   }
 
-  const loadSong = useCallback(() => {
-    fetch(`${corsURI}${uri}`)
-      .then(res => res.text())
-      .then(text => {
-        const div = document.createElement('div');
-        div.innerHTML = text;
+  const loadSong = useCallback(async () => {
+    setIsLoading(true);
+    setLoadMessage('Loading song...');
+    setLoadError('');
 
-        const [store] = div.getElementsByClassName('js-store');
-        const storeJson = store.getAttribute('data-content');
+    try {
+      const response = await fetch(`${corsURI}${uri}`);
+      const text = await response.text();
 
-        const storeData = JSON.parse(storeJson);
+      if (!response.ok) {
+        throw new Error(`Song request failed with HTTP ${response.status}.`);
+      }
 
-        const [parsedSongName] = findInObject(storeData, 'song_name');
-        const [parsedArtistName] = findInObject(storeData, 'artist_name');
-        const [parsedChords] = findInObject(storeData, 'content');
+      applySongData(parseUltimateGuitarHtml(text));
+      setShowManualSource(false);
+    } catch (error) {
+      console.error('Failed to load song from URL', error);
+      setLoadMessage('');
+      setLoadError(error.message);
+      setShowManualSource(true);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [applySongData, uri]);
 
-        setArtist(parsedArtistName);
-        setSong(parsedSongName);
-        setChords(parsedChords);
-      });
-  }, [uri]);
-
-  const load = useCallback(() => {
-          const div = document.createElement('div');
-          div.innerHTML = uriContent;
-
-          const [store] = div.getElementsByClassName('js-store');
-          const storeJson = store.getAttribute('data-content');
-
-          const storeData = JSON.parse(storeJson);
-
-          const [parsedSongName] = findInObject(storeData, 'song_name');
-          const [parsedArtistName] = findInObject(storeData, 'artist_name');
-          const [parsedChords] = findInObject(storeData, 'content');
-
-          setArtist(parsedArtistName);
-          setSong(parsedSongName);
-          setChords(parsedChords);
-  }, [uriContent]);
+  const loadManualSource = useCallback(() => {
+    try {
+      applySongData(parseUltimateGuitarHtml(manualSource));
+      setShowManualSource(false);
+    } catch (error) {
+      console.error('Failed to load pasted Ultimate Guitar HTML', error);
+      setLoadMessage('');
+      setLoadError(error.message);
+    }
+  }, [applySongData, manualSource]);
 
   useEffect(() => {
     const parseOptions = {};
@@ -229,8 +215,11 @@ function App() {
   return (
     <>
       <div className="controls">
-        <TextInput value={uri} onChange={e => setUri(e.target.value)} />
-        <TextInput value={uriContent} onChange={e => setUriContent(e.target.value)} />
+        <TextInput
+          value={uri}
+          placeholder="Paste an Ultimate Guitar URL, for example https://tabs.ultimate-guitar.com/tab/the-cranberries/dreams-chords-1485486"
+          onChange={e => setUri(e.target.value)}
+        />
 
         <Box className="box-1" pad="none">
           <Text>{`TRANSPOSE: ${transposeStep}`}</Text>
@@ -245,8 +234,7 @@ function App() {
         </Box>
 
         <Box className="box-2" pad="none" style={{ flexDirection: 'row' }}>
-          <Button primary onClick={loadSong} label="LOAD SONG" />
-          <Button primary onClick={load} label="LOAD" />
+          <Button primary onClick={loadSong} disabled={isLoading} label={isLoading ? 'LOADING...' : 'LOAD SONG'} />
           <Button primary onClick={downloadPdf} label="DOWNLOAD PDF" />
           <Button secondary onClick={downloadTxt} label="DOWNLOAD RAW" />
         </Box>
@@ -272,6 +260,29 @@ function App() {
             onChange={e => setSimplify(e.target.checked)}
           />
         </Box>
+
+        {(loadMessage || loadError) && (
+          <Box className="box-4" pad="none">
+            {loadMessage && <Text color="status-ok">{loadMessage}</Text>}
+            {loadError && <Text color="status-critical">{loadError}</Text>}
+          </Box>
+        )}
+
+        {showManualSource && (
+          <Box className="box-5" pad="none">
+            <Text>
+              Automatic loading is blocked for some Ultimate Guitar pages. Paste the HTML response from your browser here to continue.
+            </Text>
+            <textarea
+              id="manual-source"
+              name="manual-source"
+              rows={10}
+              value={manualSource}
+              onChange={e => setManualSource(e.target.value)}
+            />
+            <Button primary onClick={loadManualSource} label="LOAD PASTED HTML" />
+          </Box>
+        )}
       </div>
 
       <div className="sheet">

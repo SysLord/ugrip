@@ -11,10 +11,15 @@ COPY src/ src/
 ARG CORS_SERVER
 ENV CORS_SERVER $CORS_SERVER
 ENV REACT_APP_CORS_SERVER $CORS_SERVER
+ENV PUBLIC_URL /
 
 RUN yarn build
 
 COPY docker/start.sh start.sh
 COPY docker/cors-anywhere.js cors-anywhere.js
+
+RUN sed -i 's/\r$//' start.sh cors-anywhere.js
+
+EXPOSE 5000 5001
 
 CMD [ "sh", "start.sh" ]
