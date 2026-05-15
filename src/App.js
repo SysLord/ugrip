@@ -37,7 +37,6 @@ function App() {
     'https://tabs.ultimate-guitar.com/tab/the-cranberries/dreams-chords-1485486'
   );
   const [manualSource, setManualSource] = useState('');
-  const [showManualSource, setShowManualSource] = useState(false);
   const [loadError, setLoadError] = useState('');
   const [loadMessage, setLoadMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -114,12 +113,10 @@ function App() {
       }
 
       applySongData(parseUltimateGuitarHtml(text));
-      setShowManualSource(false);
     } catch (error) {
       console.error('Failed to load song from URL', error);
       setLoadMessage('');
       setLoadError(error.message);
-      setShowManualSource(true);
     } finally {
       setIsLoading(false);
     }
@@ -128,7 +125,6 @@ function App() {
   const loadManualSource = useCallback(() => {
     try {
       applySongData(parseUltimateGuitarHtml(manualSource));
-      setShowManualSource(false);
     } catch (error) {
       console.error('Failed to load pasted Ultimate Guitar HTML', error);
       setLoadMessage('');
@@ -268,21 +264,20 @@ function App() {
           </Box>
         )}
 
-        {showManualSource && (
-          <Box className="box-5" pad="none">
-            <Text>
-              Automatic loading is blocked for some Ultimate Guitar pages. Paste the HTML response from your browser here to continue.
-            </Text>
-            <textarea
-              id="manual-source"
-              name="manual-source"
-              rows={10}
-              value={manualSource}
-              onChange={e => setManualSource(e.target.value)}
-            />
-            <Button primary onClick={loadManualSource} label="LOAD PASTED HTML" />
-          </Box>
-        )}
+        <Box className="box-5" pad="none">
+          <Text>
+            If Ultimate Guitar blocks automatic loading, paste the song page HTML from your browser here and use the manual loader.
+          </Text>
+          <textarea
+            id="manual-source"
+            name="manual-source"
+            rows={10}
+            placeholder="Paste the full HTML response for the Ultimate Guitar song page here"
+            value={manualSource}
+            onChange={e => setManualSource(e.target.value)}
+          />
+          <Button primary onClick={loadManualSource} label="LOAD PASTED HTML" />
+        </Box>
       </div>
 
       <div className="sheet">
