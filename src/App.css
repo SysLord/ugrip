@@ -44,6 +44,20 @@ body {
   margin: 0 5px !important;
 }
 
+.controls .box-4,
+.controls .box-5 {
+  flex: 1 1 100%;
+}
+
+.controls .box-5 textarea {
+  width: 100%;
+  min-height: 180px;
+  box-sizing: border-box;
+  font-family: monospace;
+  margin-top: 8px;
+  margin-bottom: 8px;
+}
+
 .sheet {
   font-family: monospace;
   white-space: pre;

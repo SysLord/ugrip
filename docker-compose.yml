@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  ugrip:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        CORS_SERVER: http://localhost:5001/
+    image: ugrip:latest
+    container_name: ugrip
+    ports:
+      - "5000:5000"
+      - "5001:5001"
+    restart: unless-stopped
+    network_mode:
+      bridge
