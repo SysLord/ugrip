@@ -1,4 +1,4 @@
 #!/bin/sh
 
-yarn run cors &
-yarn run serve
+npm run cors &
+npm run serve
