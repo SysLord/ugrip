@@ -2,6 +2,10 @@
 
 Fork of [hedwiggggg/ugrip](https://github.com/hedwiggggg/ugrip) — unmaintained since 2020 (last upstream commit 2020-07-06). Pulls chords/lyrics from ultimate-guitar.com, lets you transpose/simplify/reformat them, and exports a PDF or raw text file.
 
+## Overview
+
+![Overview](/doc/ugrip_overview.png)
+
 ## Changes in this fork
 
 **Fixes**
@@ -20,16 +24,31 @@ Fork of [hedwiggggg/ugrip](https://github.com/hedwiggggg/ugrip) — unmaintained
 
 # Run locally (development)
 
-1. `npm install` — install dependencies.
-2. Start the dev server with one of these npm scripts (each shows a ▶ run icon in the IntelliJ/WebStorm gutter next to the `scripts` entry in `package.json`):
-   - `npm run start` — plain `react-scripts start`, works on older Node versions.
-   - `npm run start:legacy-openssl` — same, with `NODE_OPTIONS=--openssl-legacy-provider` baked in. Use this one if `npm run start` crashes with an OpenSSL/"digital envelope routines" error (happens on newer Node versions with this old `react-scripts`).
-3. Open the app (default `http://localhost:3000`) and try "LOAD SONG". Locally there's no `REACT_APP_CORS_SERVER` set by default, so this fetch has nothing to proxy through and will fail (or you'll hit the Cloudflare challenge even with a proxy) — expected, use the manual fallback:
-   - Go to the Ultimate Guitar song page in your browser.
-   - Open DevTools (F12) → Network tab → refresh the page.
-   - Open the first HTML request and copy its Response.
-   - Paste it into the "Paste the full HTML response for the Ultimate Guitar song page here" box in the app.
-   - Click **LOAD PASTED HTML**.
+Install dependencies:
+
+```bash
+npm install
+```
+
+Start the dev server (each of these also shows a ▶ run icon in the IntelliJ/WebStorm gutter next to the `scripts` entry in `package.json`):
+
+```bash
+npm run start
+```
+
+`npm run start` works on older Node versions. If it crashes with an OpenSSL "digital envelope routines" error (happens on newer Node versions with this old `react-scripts`), use this instead — it's the same script with `NODE_OPTIONS=--openssl-legacy-provider` baked in:
+
+```bash
+npm run start:legacy-openssl
+```
+
+Open the app (default `http://localhost:3000`) and try "LOAD SONG". Locally there's no `REACT_APP_CORS_SERVER` set by default, so this fetch has nothing to proxy through and will fail (or you'll hit the Cloudflare challenge even with a proxy) — expected, use the manual fallback instead:
+
+1. Go to the Ultimate Guitar song page in your browser.
+2. Open DevTools (F12) → Network tab → refresh the page.
+3. Open the first HTML request and copy its Response.
+4. Paste it into the "Paste the full HTML response for the Ultimate Guitar song page here" box in the app.
+5. Click **LOAD PASTED HTML**.
 
 # Run with the CORS proxy (closer to the deployed/server setup)
 
@@ -37,12 +56,23 @@ The proxy (`docker/cors-anywhere.js`) lets "LOAD SONG" fetch Ultimate Guitar pag
 
 **Local use only:** the proxy has no allowlist — it will relay a request to any URL you point it at, not just Ultimate Guitar. Treat it as a local/dev convenience behind your own machine; don't expose its port on a public network without an allowlist or other access control in front of it.
 
-**Option A — docker-compose + Makefile** (also play-button friendly: IntelliJ Ultimate's Docker/Makefile plugin support shows run icons per Makefile target and per docker-compose service):
-- `make docker-build` → runs `docker-compose up --build -d`, builds the image with `CORS_SERVER=http://localhost:5001/`, and exposes port `5000` (app, served via `serve`) and `5001` (CORS proxy).
-- `make docker-stop` → runs `docker-compose down`.
+**Option A — docker-compose + Makefile.** Also play-button friendly: IntelliJ Ultimate's Docker/Makefile plugin support shows run icons per Makefile target and per docker-compose service.
+
+Build and start (runs `docker-compose up --build -d`, builds the image with `CORS_SERVER=http://localhost:5001/`, and exposes port `5000` for the app, served via `serve`, and `5001` for the CORS proxy):
+
+```bash
+make docker-build
+```
+
+Stop (runs `docker-compose down`):
+
+```bash
+make docker-stop
+```
 
 **Option B — plain Docker CLI** (manual terminal, no IDE run icon):
-```
+
+```bash
 docker build -t ugrip --build-arg CORS_SERVER=http://0.0.0.0:5001/ .
 docker run -p 5000:5000 -p 5001:5001 ugrip
 ```
@@ -71,6 +101,8 @@ screenshots:
 
 ---
 
-Run `npm run build` to build the app, then just serve the build folder.
+Build the app, then just serve the `build` folder — with [`serve`](https://www.npmjs.com/package/serve), for example, or any other webhost:
 
-(with https://www.npmjs.com/package/serve for example, or any other webhost)
+```bash
+npm run build
+```

@@ -283,7 +283,7 @@ function App() {
           <textarea
             id="manual-source"
             name="manual-source"
-            rows={10}
+            rows={3}
             placeholder="Paste the full HTML response for the Ultimate Guitar song page here"
             value={manualSource}
             onChange={e => setManualSource(e.target.value)}
