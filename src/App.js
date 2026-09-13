@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 
 import {
   TextInput,
@@ -15,21 +15,56 @@ import { parse, transpose, prettyPrint } from 'chord-magic';
 
 import generatePDF from './lib/generate-pdf';
 import { parseUltimateGuitarHtml } from './lib/ultimate-guitar';
+import { fileName, generateTxtFile } from './lib/export-helpers';
 
 import './App.css';
 
 const corsURI = process.env.REACT_APP_CORS_SERVER;
 
+function tokenizeChords(chords) {
+  return chords.split(/(\[ch\]|\[\/ch\]|\[tab\]|\[\/tab\])/g);
+}
+
+function parseChordNodes(tokens) {
+  const root = { children: [] };
+  const stack = [root];
+  const nonEmptyTokens = tokens.filter(token => token !== '');
+
+  for (let i = 0; i < nonEmptyTokens.length; i += 1) {
+    const token = nonEmptyTokens[i];
+    const current = stack[stack.length - 1];
+
+    if (token === '[ch]') {
+      const node = { type: 'ch', children: [] };
+      current.children.push(node);
+      stack.push(node);
+    } else if (token === '[/ch]') {
+      if (current.type === 'ch') stack.pop();
+    } else if (token === '[tab]') {
+      const node = { type: 'tab', children: [] };
+      current.children.push(node);
+      stack.push(node);
+    } else if (token === '[/tab]') {
+      if (current.type === 'tab') stack.pop();
+    } else {
+      current.children.push({ type: 'text', value: token });
+    }
+  }
+
+  return root.children;
+}
+
+function renderChordNodes(nodes) {
+  return nodes.map((node, index) => {
+    if (node.type === 'text') return node.value;
+    if (node.type === 'ch') return <b key={index}>{renderChordNodes(node.children)}</b>;
+    if (node.type === 'tab') return <div key={index}>{renderChordNodes(node.children)}</div>;
+    return null;
+  });
+}
+
 function formatChords(chords) {
-  let formattedChords = chords;
-
-  formattedChords = formattedChords.replace(/\[ch\]/g, '<b>');
-  formattedChords = formattedChords.replace(/\[\/ch\]/g, '</b>');
-
-  formattedChords = formattedChords.replace(/\[tab\]/g, '<div>');
-  formattedChords = formattedChords.replace(/\[\/tab\]/g, '</div>');
-
-  return { __html: formattedChords };
+  return renderChordNodes(parseChordNodes(tokenizeChords(chords)));
 }
 
 function App() {
@@ -52,7 +87,7 @@ function App() {
   const [transposeStep, setTransposeStep] = useState(0);
   const [transposedChords, setTransposedChords] = useState(chords);
 
-  const renderChords = useCallback(() => formatChords(transposedChords), [transposedChords]);
+  const chordsElements = useMemo(() => formatChords(transposedChords), [transposedChords]);
   const downloadPdf = useCallback(() => { generatePDF(artist, song, transposedChords, uri, fileName(artist, song)) }, [artist, song, transposedChords, uri]);
   const downloadTxt = useCallback(() => { generateTxtFile(artist, song, transposedChords, uri, fileName(artist, song)) }, [artist, song, transposedChords, uri]);
 
@@ -64,42 +99,13 @@ function App() {
     setLoadMessage(`Loaded "${nextSong}" by ${nextArtist}.`);
   }, []);
 
-  function fileName(artist, song) {
-    const fileName = `${artist}_${song}`;
-    // artist /artist_song  song  -->  artist-artist_song-song
-    const fileNameForStorage = fileName
-        .replace(/\s/g, '-')
-        .replace(/[^-\w]/g, '')
-        .replace(/-+/g, '-')
-        .toLocaleLowerCase();
-
-    return fileNameForStorage;
-  }
-
-  // Story raw source as simple as possible, so that a human can copy-paste chords easily (not true for JSON with \\n)
-  function generateTxtFile(artist, song, transposedChords, uri, fileName) {
-    const text = [
-      'ug_Format:RawV1',
-      `ug_url:${uri}`,
-      `ug_artist:${artist}`,
-      `ug_song:${song}`,
-      `ug_chords:${transposedChords}`
-    ].join('\n');
-
-    const a = document.createElement('a');
-    const hrefUrl = new Blob([text], { type: 'text/plain' });
-    a.href = URL.createObjectURL(hrefUrl);
-    a.download = fileName  + ".txt";
-    document.body.appendChild(a);
-    try {
-      a.click();
-    } finally {
-      try { document.body.removeChild(a); } catch(e) { console.log(e); }
-      try { URL.revokeObjectURL(hrefUrl); } catch(e) { console.log(e); }
-    }
-  }
-
   const loadSong = useCallback(async () => {
+    if (!corsURI) {
+      setLoadMessage('');
+      setLoadError('No CORS proxy configured (REACT_APP_CORS_SERVER is unset) — use the manual paste option below instead.');
+      return;
+    }
+
     setIsLoading(true);
     setLoadMessage('Loading song...');
     setLoadError('');
@@ -152,7 +158,7 @@ function App() {
         break;
     }
 
-    for (let i = 1; i <= transChords.length; i += 2) {
+    for (let i = 1; i < transChords.length; i += 2) {
       const chord = transChords[i];
 
       if (chord) {
@@ -257,6 +263,12 @@ function App() {
           />
         </Box>
 
+        <Box className="notice" background="light-2" pad={{ vertical: 'xsmall', horizontal: 'small' }} round="xsmall">
+          <Text size="small" color="dark-3">
+            Changing any of these settings will overwrite your manual edits.
+          </Text>
+        </Box>
+
         {(loadMessage || loadError) && (
           <Box className="box-4" pad="none">
             {loadMessage && <Text color="status-ok">{loadMessage}</Text>}
@@ -283,7 +295,7 @@ function App() {
       <div className="sheet">
         <div className="artist">{artist}</div>
         <div className="song">{song}</div>
-        <div className="chords" dangerouslySetInnerHTML={renderChords(transposedChords)}></div>
+        <div className="chords">{chordsElements}</div>
         <div className="artist">Editor</div>
         <div>
             <input value={artist} onChange={e => setArtist(e.target.value) } />
