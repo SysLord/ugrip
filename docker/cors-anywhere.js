@@ -3,6 +3,10 @@ const url = require('url');
 
 const serverUrlRaw = process.env.CORS_SERVER || 'http://0.0.0.0:8080';
 const serverUrl = url.parse(serverUrlRaw, true);
+// Bind to all interfaces regardless of the hostname in CORS_SERVER: that value
+// is also used as the browser-facing URL (e.g. "localhost"), which binding to
+// inside the container would make unreachable via Docker's published port.
+const bindHost = '0.0.0.0';
 
 proxy
   .createServer({
@@ -20,6 +24,6 @@ proxy
       return false;
     }
   })
-  .listen(serverUrl.port, serverUrl.hostname, () => {
-    console.log(`Running CORS Anywhere on ${serverUrl.hostname}, with port ${serverUrl.port}`);
+  .listen(serverUrl.port, bindHost, () => {
+    console.log(`Running CORS Anywhere on ${bindHost}, with port ${serverUrl.port}`);
   });
