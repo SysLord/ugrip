@@ -6,6 +6,7 @@
   "homepage": "https://hedwiggggg.github.io/ugrip",
   "scripts": {
     "start": "react-scripts start",
+    "start:legacy-openssl": "NODE_OPTIONS=--openssl-legacy-provider react-scripts start",
     "build": "GENERATE_SOURCEMAP=false react-scripts build",
     "cors": "node cors-anywhere.js",
     "serve": "serve build",
