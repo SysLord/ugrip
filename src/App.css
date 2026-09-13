@@ -49,6 +49,11 @@ body {
   flex: 1 1 100%;
 }
 
+.controls .notice {
+  flex: 1 1 100%;
+  margin-top: 0 !important;
+}
+
 .controls .box-5 textarea {
   width: 100%;
   min-height: 180px;
