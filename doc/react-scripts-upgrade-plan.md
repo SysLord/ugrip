@@ -24,5 +24,5 @@ Bump `react-scripts` to `^5.0.1` (Webpack 5, no OpenSSL issue).
 
 ## TODO
 - [ ] Bump `react-scripts` to `^5.0.1` in `package.json`
-- [ ] Run `yarn build` and `yarn start`, fix whatever breaks
+- [ ] Run `npm run build` and `npm run start`, fix whatever breaks
 - [ ] Remove `start:legacy-openssl` script once no longer needed

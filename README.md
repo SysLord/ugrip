@@ -58,6 +58,6 @@ screenshots:
 
 ---
 
-Run `yarn build` to build the app, then just serve the build folder.
+Run `npm run build` to build the app, then just serve the build folder.
 
 (with https://www.npmjs.com/package/serve for example, or any other webhost)
